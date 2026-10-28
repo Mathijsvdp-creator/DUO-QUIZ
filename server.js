@@ -2,6 +2,7 @@
 const http=require('http'),fs=require('fs'),path=require('path');
 const PORT=process.env.PORT||3000, PIN=process.env.HOST_PIN||'2cv', DATA=process.env.DATA_FILE||path.join(__dirname,'data.json');
 const QUESTIONS=JSON.parse(fs.readFileSync(path.join(__dirname,'questions.json'),'utf8'));
+let CONFIG={teams:['Bekkes','Ellen','Lisie']};try{CONFIG=JSON.parse(fs.readFileSync(path.join(__dirname,'config.json'),'utf8'))}catch(e){}
 let db={state:{q:-1,rev:false,ans:'',custom:null,pause:null},subs:{},marks:{}};
 try{db=JSON.parse(fs.readFileSync(DATA,'utf8'))}catch(e){}
 function save(){try{fs.writeFileSync(DATA,JSON.stringify(db))}catch(e){console.error(e.message)}}
@@ -18,6 +19,7 @@ http.createServer(async(req,res)=>{
   const ka=setInterval(()=>res.write(': ka\n\n'),20000);
   req.on('close',()=>{clearInterval(ka);clients.delete(res)});return;
  }
+ if(req.method==='GET'&&url==='/api/config')return json(res,CONFIG);
  if(req.method==='GET'&&url==='/api/questions')return json(res,QUESTIONS.map(({r,q})=>({r,q})));
  if(req.method==='POST'&&url==='/api/sub'){
   const b=await body(req);const key=String(b.key||'');

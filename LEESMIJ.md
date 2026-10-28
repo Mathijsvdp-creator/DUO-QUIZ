@@ -14,6 +14,7 @@ De laptop zelf is geen goede server onderweg, want de gsm's zitten op 4G. Zet de
 Je krijgt een link als `https://jouw-quiz.onrender.com`. Zet de link in de WhatsApp-groep. Een gratis plan kan na een tijd slapen: open de link ruim vooraf zodat de server wakker is.
 
 ## Aanpassen
+- Teamnamen: `config.json` (precies drie namen).
 - Vragen en antwoorden: `questions.json` (velden `r` = etappe, `q` = vraag, `a` = antwoord, enkel voor jou). Herstart de server na een wijziging.
 - Pincode: omgevingsvariabele `HOST_PIN` (standaard `2cv`, verander dat).
 - De stand en antwoorden worden bewaard in `data.json`. Wissen kan met "Quiz opnieuw beginnen" op het quizmasterscherm.
