@@ -67,6 +67,7 @@ function pickerHtml(){let g='',h='';Q.forEach((x,i)=>{const e=x.r.split(' · ')[
  h+=`<button class="chip ${i==state.q&&!state.custom?'cur':done?'done':''}" data-go="${i}" aria-label="Vraag ${i+1}">${i+1}</button>`});
  return `<div class="card"><h2>Kies een vraag</h2>${h}</div></div>`}
 function adjHtml(){const ad=state.adj||{};return '<div class="card"><h2>Punten corrigeren</h2>'+[1,2,3].map(n=>`<div class="row" style="justify-content:space-between;align-items:center;flex-wrap:nowrap"><b>${tn(n)}</b><span>${+ad[n]||0} <button data-adj="${n}" data-d="-1" style="min-width:46px">−1</button> <button data-adj="${n}" data-d="1" style="min-width:46px">+1</button></span></div>`).join('')+'</div>'}
+function stopsHtml(){return `<div class="card"><h2>Etappe-stops</h2><div class="row"><button data-p="Korte stop: even de benen strekken en een foto maken.">Korte stop</button><button data-p="Lunchstop: smakelijk! Na de lunch volgt de lunchronde.">Lunch</button><button class="pri" data-p="" ${state.pause?'':'disabled'}>Verder met de quiz</button></div>${state.pause?'<p class="mut">Pauze actief: '+esc(state.pause)+'</p>':''}</div>`}
 function scoreHtml(){const t=totals();return '<div class="score">'+[1,2,3].map(n=>`<div class="${team==n?'me':''}"><span>${tn(n)}</span><span>${t[n]}</span></div>`).join('')+'</div>'}
 async function api(path,body){const r=await fetch(path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});return r.ok?r.json():Promise.reject(r.status)}
 async function setS(p){await api('/api/host/state',{pin,patch:p})}
@@ -81,8 +82,9 @@ function render(){
  }
  const cur=state.custom?{r:'Extra vraag',q:state.custom.q}:Q[state.q];
  const head=`<div class="row" style="justify-content:space-between;align-items:center;flex-wrap:nowrap"><span class="pill">${mode=='host'?'Quizmaster':tn(team)}</span><button class="link" data-back="1">Wissel</button></div>`;
+ if(state.pause&&mode!='host')return $(`${head}<div class="card" style="text-align:center"><h2>Pauze</h2><p class="q">${esc(state.pause)}</p><p class="mut">De volgende etappe start straks. Hou de gsm bij de hand.</p></div>${scoreHtml()}`);
  if(!cur){
-  if(mode=='host')return $(`${head}<h1>Klaar om te starten?</h1><div class="card"><button class="pri" data-go="0">Start met vraag 1</button><p class="mut">Spelers zien de vraag zodra je die opent.</p></div>${pickerHtml()}${scoreHtml()}${adjHtml()}`);
+  if(mode=='host')return $(`${head}${stopsHtml()}<h1>Klaar om te starten?</h1><div class="card"><button class="pri" data-go="0">Start met vraag 1</button><p class="mut">Spelers zien de vraag zodra je die opent.</p></div>${pickerHtml()}${scoreHtml()}${adjHtml()}`);
   return $(`${head}<h1>Wacht op de quizmaster</h1><p class="mut">De eerste vraag komt zo.</p>${scoreHtml()}`);
  }
  if(state.pause&&mode!='host')return $(`${head}<div class="card" style="text-align:center"><h2>Pauze</h2><p class="q">${esc(state.pause)}</p><p class="mut">De volgende etappe start straks. Hou de gsm bij de hand.</p></div>${scoreHtml()}`);
@@ -91,9 +93,8 @@ function render(){
  if(mode=='host'){
   const fb=fastest(id);const rows=[1,2,3].map(t=>{const s=subs[id+'_t'+t];const m=marks[id+'_t'+t];
    return `<div class="sub"><span><b>${tn(t)}:</b> ${s?esc(s.text):'<i class="mut">nog niets</i>'}${s&&typeof s.ms=='number'?` <span class="mut">· ${sec(s.ms)}${fb&&fb.n==t?' ⚡ snelste, +1 bonus':''}</span>`:''}</span><span class="b"><button class="${m&&m.ok?'ok':''}" data-m="${t}" data-v="1" ${s?'':'disabled'} aria-label="Goed">✓</button><button class="${m&&m.ok===false?'no':''}" data-m="${t}" data-v="0" ${s?'':'disabled'} aria-label="Fout">✗</button></span></div>`}).join('');
-  return $(`${head}${pickerHtml()}<div class="card">${body}<div class="ans">${esc(state.custom?customAns:(answers[id]||'…'))}</div><div>${rows}</div></div>
+  return $(`${head}${stopsHtml()}${pickerHtml()}<div class="card">${body}<div class="ans">${esc(state.custom?customAns:(answers[id]||'…'))}</div><div>${rows}</div></div>
   <div class="card"><h2>Extra vraag live sturen</h2><input type="text" id="xq" placeholder="Typ een vraag en druk op Enter" enterkeyhint="send"><input type="text" id="xa" placeholder="Goed antwoord (optioneel, enkel voor jou)" enterkeyhint="send"><button class="pri" data-x="1">Stuur naar alle teams</button></div>
-  <div class="card"><h2>Etappe-stops</h2><div class="row"><button data-p="Korte stop: even de benen strekken en een foto maken.">Korte stop</button><button data-p="Lunchstop: smakelijk! Na de lunch volgt etappe 3.">Lunch</button><button class="pri" data-p="" ${state.pause?'':'disabled'}>Verder met de quiz</button></div>${state.pause?'<p class="mut">Pauze actief: '+esc(state.pause)+'</p>':''}</div>
   <div class="row"><button data-go="${n-1}" ${(n==0||state.custom)?'disabled':''}>Vorige</button><button class="pri" data-rev="1" ${state.rev?'disabled':''}>Toon antwoord aan iedereen</button><button class="pri" data-go="${state.custom?n:n+1}" ${(!state.custom&&n+1>=Q.length)?'disabled':''}>Volgende</button></div>${scoreHtml()}${adjHtml()}<button class="link" data-reset="1">Quiz opnieuw beginnen</button>`);
  }
  const mine=subs[id+'_t'+team], mk=marks[id+'_t'+team];
