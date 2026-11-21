@@ -126,7 +126,6 @@ function onData(d){state=d.state||{q:-1,rev:false,ans:''};subs=d.subs||{};marks=
  if(k!==lastKey)recvAt=Date.now();lastKey=k;render()}
 (async()=>{
  render();
- const t=+ls('duoTeam');if(t>=1&&t<=3){team=t;mode='team'}
  try{pin=ls('duoPin')||''}catch(e){}
  async function loadQ(){try{Q=await (await fetch('/api/questions')).json();render()}catch(e){setTimeout(loadQ,3000)}}
  loadQ();try{const c=await (await fetch('/api/config')).json();if(Array.isArray(c.teams)&&c.teams.length==3){TEAMS=c.teams}}catch(e){}
