@@ -59,13 +59,14 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}}
 function totals(){const t={1:0,2:0,3:0},best={};
  for(const k in marks){if(marks[k]&&marks[k].ok){const [q,n]=k.split('_t');if(t[n]===undefined)continue;t[n]++;const ms=subs[k]&&subs[k].ms;if(typeof ms=='number'&&(!best[q]||ms<best[q].ms))best[q]={n,ms}}}
- for(const q in best)t[best[q].n]++;return t}
+ for(const q in best)t[best[q].n]++;const ad=state.adj||{};for(const n of [1,2,3])t[n]+=(+ad[n]||0);return t}
 function fastest(id){let b=null;for(const n of [1,2,3]){const k=id+'_t'+n;if(marks[k]&&marks[k].ok&&subs[k]&&typeof subs[k].ms=='number'&&(!b||subs[k].ms<b.ms))b={n,ms:subs[k].ms}}return b}
 const sec=ms=>(ms/1000).toFixed(1).replace('.',',')+' s';
 function pickerHtml(){let g='',h='';Q.forEach((x,i)=>{const e=x.r.split(' · ')[0];if(e!==g){g=e;h+=`<p class="grp">${esc(e)}</p><div class="chips">`.replace(/^/,i?'</div>':'')}
  const id='q'+String(i).padStart(2,'0');const done=[1,2,3].some(t=>marks[id+'_t'+t]);
  h+=`<button class="chip ${i==state.q&&!state.custom?'cur':done?'done':''}" data-go="${i}" aria-label="Vraag ${i+1}">${i+1}</button>`});
  return `<div class="card"><h2>Kies een vraag</h2>${h}</div></div>`}
+function adjHtml(){const ad=state.adj||{};return '<div class="card"><h2>Punten corrigeren</h2>'+[1,2,3].map(n=>`<div class="row" style="justify-content:space-between;align-items:center;flex-wrap:nowrap"><b>${tn(n)}</b><span>${+ad[n]||0} <button data-adj="${n}" data-d="-1" style="min-width:46px">−1</button> <button data-adj="${n}" data-d="1" style="min-width:46px">+1</button></span></div>`).join('')+'</div>'}
 function scoreHtml(){const t=totals();return '<div class="score">'+[1,2,3].map(n=>`<div class="${team==n?'me':''}"><span>${tn(n)}</span><span>${t[n]}</span></div>`).join('')+'</div>'}
 async function api(path,body){const r=await fetch(path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});return r.ok?r.json():Promise.reject(r.status)}
 async function setS(p){await api('/api/host/state',{pin,patch:p})}
@@ -81,7 +82,7 @@ function render(){
  const cur=state.custom?{r:'Extra vraag',q:state.custom.q}:Q[state.q];
  const head=`<div class="row" style="justify-content:space-between;align-items:center;flex-wrap:nowrap"><span class="pill">${mode=='host'?'Quizmaster':tn(team)}</span><button class="link" data-back="1">Wissel</button></div>`;
  if(!cur){
-  if(mode=='host')return $(`${head}<h1>Klaar om te starten?</h1><div class="card"><button class="pri" data-go="0">Start met vraag 1</button><p class="mut">Spelers zien de vraag zodra je die opent.</p></div>${pickerHtml()}${scoreHtml()}`);
+  if(mode=='host')return $(`${head}<h1>Klaar om te starten?</h1><div class="card"><button class="pri" data-go="0">Start met vraag 1</button><p class="mut">Spelers zien de vraag zodra je die opent.</p></div>${pickerHtml()}${scoreHtml()}${adjHtml()}`);
   return $(`${head}<h1>Wacht op de quizmaster</h1><p class="mut">De eerste vraag komt zo.</p>${scoreHtml()}`);
  }
  if(state.pause&&mode!='host')return $(`${head}<div class="card" style="text-align:center"><h2>Pauze</h2><p class="q">${esc(state.pause)}</p><p class="mut">De volgende etappe start straks. Hou de gsm bij de hand.</p></div>${scoreHtml()}`);
@@ -93,7 +94,7 @@ function render(){
   return $(`${head}${pickerHtml()}<div class="card">${body}<div class="ans">${esc(state.custom?customAns:(answers[id]||'…'))}</div><div>${rows}</div></div>
   <div class="card"><h2>Extra vraag live sturen</h2><input type="text" id="xq" placeholder="Typ een vraag en druk op Enter" enterkeyhint="send"><input type="text" id="xa" placeholder="Goed antwoord (optioneel, enkel voor jou)" enterkeyhint="send"><button class="pri" data-x="1">Stuur naar alle teams</button></div>
   <div class="card"><h2>Etappe-stops</h2><div class="row"><button data-p="Korte stop: even de benen strekken en een foto maken.">Korte stop</button><button data-p="Lunchstop: smakelijk! Na de lunch volgt etappe 3.">Lunch</button><button class="pri" data-p="" ${state.pause?'':'disabled'}>Verder met de quiz</button></div>${state.pause?'<p class="mut">Pauze actief: '+esc(state.pause)+'</p>':''}</div>
-  <div class="row"><button data-go="${n-1}" ${(n==0||state.custom)?'disabled':''}>Vorige</button><button class="pri" data-rev="1" ${state.rev?'disabled':''}>Toon antwoord aan iedereen</button><button class="pri" data-go="${state.custom?n:n+1}" ${(!state.custom&&n+1>=Q.length)?'disabled':''}>Volgende</button></div>${scoreHtml()}<button class="link" data-reset="1">Quiz opnieuw beginnen</button>`);
+  <div class="row"><button data-go="${n-1}" ${(n==0||state.custom)?'disabled':''}>Vorige</button><button class="pri" data-rev="1" ${state.rev?'disabled':''}>Toon antwoord aan iedereen</button><button class="pri" data-go="${state.custom?n:n+1}" ${(!state.custom&&n+1>=Q.length)?'disabled':''}>Volgende</button></div>${scoreHtml()}${adjHtml()}<button class="link" data-reset="1">Quiz opnieuw beginnen</button>`);
  }
  const mine=subs[id+'_t'+team], mk=marks[id+'_t'+team];
  let ansBlock='';
@@ -109,6 +110,7 @@ app.addEventListener('click',async e=>{
  else if(b.dataset.h){if(pin){try{await api('/api/host/check',{pin});mode='host';await loadAnswers()}catch(e){mode='pin'}}else mode='pin'}
  else if(b.dataset.pin){pin=document.getElementById('pin').value.trim();try{await api('/api/host/check',{pin});ls('duoPin',pin);pinErr='';mode='host';await loadAnswers()}catch(e){pinErr='Onjuiste pincode.';pin=''}}
  else if(b.dataset.back){mode=null}
+ else if(b.dataset.adj){const ad={...(state.adj||{})};const n=b.dataset.adj;ad[n]=(+ad[n]||0)+(+b.dataset.d);await setS({adj:ad})}
  else if(b.dataset.go!==undefined){customAns='';await setS({q:+b.dataset.go,custom:null,pause:null,rev:false,ans:''});return}
  else if(b.dataset.p!==undefined){await setS({pause:b.dataset.p||null});return}
  else if(b.dataset.rev){const id='q'+String(state.q).padStart(2,'0');await setS({rev:true,ans:state.custom?customAns:(answers[id]||'')});return}
